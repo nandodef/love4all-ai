@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>Love4All.ai</title>
+  <link>https://love4all.ai</link>
+  <description>A small home for short entries with accompanying PDF papers, Python notebooks, and TeX source files.</description>
+  
+<item>
+  <title>Diffusion and flow matching tutorial</title>
+  <link>https://love4all.ai/blog/diffusion-and-flow-matching-tutorial/</link>
+  <guid>https://love4all.ai/blog/diffusion-and-flow-matching-tutorial/</guid>
+  <pubDate>Mon, 11 May 2026 00:00:00 +0100</pubDate>
+  <description>Diffusion and flow matching are the standard ways for generating images, video, speech, music and even protein structures and molecular simulations. The application to science, in particular to molecular design, is fasc…</description>
+</item>
+</channel>
+</rss>
