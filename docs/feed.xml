@@ -6,6 +6,13 @@
   <description>Sharing ideas I love with the world. I will use this blog to cover ideas like intelligence, causality, agency, awareness and self-reference in the hope of creating greater meaning through discussions with you. These are important ideas to discuss for safety reasons. AI today feels like driving a fast Ferrari at night without lights. My hope is to shed some light so we can anticipate and avert risks. I would also like to focus on positive strategies like using AI to design materials, nano-tech and machines to prevent the catastrophic destruction of our environment and to create real wealth for everyone, e.g. via carbon capture or energy creation and storage. Much of this will also be about the extended-mind approach of building AI that harnesses all our scientific and engineering tools to advance science, mathematics, health, and technology beyond what we humans are capable of.</description>
   
 <item>
+  <title>Intelligence via generation and selection: A tutorial on reinforcement learning with LLMs and tools</title>
+  <link>https://love4all.ai/blog/intelligence-via-generation-and-selection-a-tutorial-on-reinforcement-learning-with-llms-and-tools/</link>
+  <guid>https://love4all.ai/blog/intelligence-via-generation-and-selection-a-tutorial-on-reinforcement-learning-with-llms-and-tools/</guid>
+  <pubDate>Thu, 14 May 2026 00:00:00 +0100</pubDate>
+  <description>The central theme of this note is that intelligent systems become powerful when they can both generate candidate behaviours and select among them. Supervised learning corresponds to the most trivial form of imitation: m…</description>
+</item>
+<item>
   <title>Diffusion and flow matching tutorial</title>
   <link>https://love4all.ai/blog/diffusion-and-flow-matching-tutorial/</link>
   <guid>https://love4all.ai/blog/diffusion-and-flow-matching-tutorial/</guid>
