@@ -522,6 +522,15 @@ ReST uses the following gradient to trade-off staying close to the expert data a
 The data policy $\pi_{data}(\action \mid \obs)$ can correspond to actually using human expert data, or samples from an SFT policy, or any other policy being distilled.
 
 
+
+
+
+
+
+
+
+
+
 \subsubsection{A minimal Python policy-gradient experiment}
 \label{sec:minimal_pg_code}
 
@@ -536,64 +545,48 @@ The accompanying notebook \texttt{minimal\_policy\_gradients\_with\_llm.ipynb} i
 \]
 The policy is written as \(\policy(\action\mid\obs;\params)\), where \policy{} denotes the model family and \params{} denotes its neural-network weights. The notebook first performs a short SFT warm-start, freezes that model as a reference policy \refpolicy, and then applies policy-gradient RL.
 
-For this one-step problem, the expected-reward objective is
-\[
-\perf(\policy,\params)
-=
-\E_{\obs\sim P(\obs),\;\action\sim\policy(\cdot\mid\obs;\params)}
-\left[\reward(\action,\obs)\right].
-\]
-The log-derivative trick gives
-\[
-\nabla_{\params}\perf(\policy,\params)
-=
-\E\left[
-\reward(\action,\obs)
-\nabla_{\params}\log \policy(\action\mid\obs;\params)
-\right].
-\]
-In the code we use a mini-batch estimate with an advantage \advantage. The reference policy supplies a sampled KL penalty,
-\[
-\shapedreward_i
-=
-\reward_i
--
-\klcoef
-\left(
-\log \policy(\action_i\mid\obs_i;\params)
--
-\log \refpolicy(\action_i\mid\obs_i)
-\right),
-\]
-and the standardized advantage is
+In the code we use a mini-batch estimate with an advantage \advantage. The proximity-to-reference penalty enters as a separate term in the loss rather than being folded into the reward. The advantage is computed from the raw reward,
 \[
 \advantage_i
 =
-\frac{\shapedreward_i-\operatorname{mean}(\shapedreward)}
-{\operatorname{std}(\shapedreward)+\epsilon}.
+\frac{\reward_i-\operatorname{mean}(\reward)}
+{\operatorname{std}(\reward)+\epsilon},
 \]
+and a sampled KL penalty against \refpolicy{} is added to the loss using Schulman's $k_{3}$ estimator,
+\begin{align*}
+\widehat{\mathrm{KL}}_{k_{3}}(\action_i,\obs_i) 
+&=
+\bigl(\log \policy(\action_i\mid\obs_i;\params)-\log \refpolicy(\action_i\mid\obs_i)\bigr)\\
+&+\exp\!\bigl(\log \refpolicy(\action_i\mid\obs_i)-\log \policy(\action_i\mid\obs_i;\params)\bigr)
+-1,
+\end{align*}
+with \(\action_i\sim\policy(\cdot\mid\obs_i;\params)\). Once the batch
+\[
+\{(\obs_i,\action_i,\reward_i,\advantage_i,\log\refpolicy(\action_i\mid\obs_i))\}_{i=1}^{N}
+\]
+has been sampled, the observations \(\obs_i\), sampled actions \(\action_i\), advantages \(\advantage_i\), and reference log-probabilities \(\log\refpolicy(\action_i\mid\obs_i)\) are treated as fixed data for the gradient step. The only quantity in the surrogate loss that depends on the current parameters \(\params\) is the current-policy log-probability
+$\log \policy(\action_i\mid \obs_i;\params),$
+which appears both in the policy-gradient term and (through the log-ratio) in the $k_{3}$ KL term.
 
-Once the batch
+Codebases that use automatic differentiation, like PyTorch, usually use a policy gradients (PG) surrogate loss. We will show that he gradient of this surrogate, with a stop-gradient, is the correct one. The total loss is:
 \[
-\{(\obs_i,\action_i,\advantage_i)\}_{i=1}^{N}
-\]
-has been sampled, the observations \(\obs_i\), sampled actions \(\action_i\), and advantage estimates \(\advantage_i\) are treated as fixed data for the gradient step. The only quantity in the surrogate loss that depends on the current parameters \(\params\) is the log-probability
-\[
-\log \policy(\action_i\mid \obs_i;\params).
-\]
-Implementations typically use a policy-gradient surrogate, written with a stop-gradient on the advantages:
-\[
-\loss_{\mathrm{PG}}(\params)
+\loss(\params)
 =
+\underbrace{
 -
-\frac{1}{N}
-\sum_{i=1}^{N}
+\frac{1}{N}\sum_{i=1}^{N}
 \operatorname{sg}[\advantage_i]\,
-\log \policy(\action_i\mid\obs_i;\params),
+\log \policy(\action_i\mid\obs_i;\params)
+}_{\loss_{\mathrm{PG}}(\params)}
+\;+\;
+\underbrace{
+\klcoef\,\frac{1}{N}\sum_{i=1}^{N}
+\widehat{\mathrm{KL}}_{k_{3}}(\action_i,\obs_i)
+}_{\loss_{\mathrm{KL}}(\params)},
 \]
-where \(\operatorname{sg}[\cdot]\) means ``treat this quantity as a constant when differentiating.''
+where \(\operatorname{sg}[\cdot]\) means ``treat this quantity as a constant when differentiating.'' The stop-gradient applies only to the advantages: the gradient does flow through \(\log\policy(\action_i\mid\obs_i;\params)\) in both the policy-gradient term and the $k_{3}$ KL term.
 
-Now differentiate term by term. By linearity of the gradient,
+Let us now verify that this is correct. Differentiate the policy-gradient term \(\loss_{\mathrm{PG}}\) term by term. By linearity of the gradient,
 \[
 \nabla_{\params}\loss_{\mathrm{PG}}(\params)
 =
@@ -635,9 +628,9 @@ Therefore
 =
 \advantage_i\,
 \nabla_{\params}
-\log \policy(\action_i\mid\obs_i;\params).
+\log \policy(\action_i\mid\obs_i;\params),
 \]
-Substituting this back into the batch loss gives the correct policy gradient:
+and the policy-gradient piece of the loss reduces to the correct quantity:
 \[
 \nabla_{\params}\loss_{\mathrm{PG}}(\params)
 =
@@ -649,17 +642,15 @@ Substituting this back into the batch loss gives the correct policy gradient:
 \log \policy(\action_i\mid\obs_i;\params).
 \]
 
-In the code that follows, this is why the policy-gradient loss is usually implemented as
+In the code that follows, this is why the policy-gradient loss is implemented as
 \[
-\texttt{loss = -(advantages.detach() * log\_probs).mean()}.
+\texttt{pg\_loss = -(advantage.detach() * logp).mean()}.
 \]
-The call to \texttt{detach()} enforces the mathematical convention above: the advantage is used as a scalar weight on the log-probability, not as something through which the optimiser should backpropagate during the policy update.
-
-
-
-
-
-
+The call to \texttt{detach()} enforces the mathematical convention above: the advantage is used as a scalar weight on the log-probability, not as something through which the optimiser should backpropagate during the policy update. In contrast, the $k_{3}$ KL term is written as
+\[
+\texttt{kl\_loss = beta * (log\_ratio + torch.exp(-log\_ratio) - 1).mean()},
+\]
+\emph{without} any \texttt{detach()} on the current-policy log-probability: we want the gradient of the KL penalty to flow back through \(\log\policy(\action_i\mid\obs_i;\params)\) and update \params{} so the policy is pulled towards \refpolicy. The reference log-probability \(\log\refpolicy(\action_i\mid\obs_i)\) is computed under \texttt{torch.no\_grad()} since \refpolicy{} is frozen.
 
 \begin{examplebox}{Experiment setup: prompts, model, and reward}
 \begin{lstlisting}[language=Python]
@@ -708,21 +699,30 @@ def policy_gradient_step(model, ref_model, opt, batch_size=64, beta=0.02):
     logp = dist.log_prob(actions)
     entropy = dist.entropy().mean()
 
-    # 3. Evaluate the same actions under the frozen SFT/reference policy.
+    # 3. Evaluate the same actions under the frozen reference policy,
+    #    and compute the verifier reward.
     with torch.no_grad():
         ref_logits = ref_model(x, lengths)
-        ref_dist = torch.distributions.Categorical(logits=ref_logits)
-        ref_logp = ref_dist.log_prob(actions)
-
+        ref_logp = torch.distributions.Categorical(
+            logits=ref_logits
+        ).log_prob(actions)
         reward = (actions == targets).float()
-        sampled_kl = logp - ref_logp
-        shaped_reward = reward - beta * sampled_kl
-        advantage = (shaped_reward - shaped_reward.mean()) / (
-            shaped_reward.std() + 1e-8
-        )
 
-    # 4. REINFORCE: gradient of -A log pi is -A grad log pi.
-    loss = -(advantage * logp).mean()
+    # 4. Advantage from the *raw* reward (KL is a separate loss term).
+    with torch.no_grad():
+        advantage = (reward - reward.mean()) / (reward.std() + 1e-8)
+
+    # 5. Schulman's k3 KL estimator:
+    #    k3 = (log pi - log pi_ref) + exp(log pi_ref - log pi) - 1.
+    #    log_ratio keeps its grad-graph; ref_logp is no_grad, so the KL
+    #    term is differentiable in theta.
+    log_ratio = logp - ref_logp
+    kl_k3 = log_ratio + torch.exp(-log_ratio) - 1.0   # >= 0 elementwise
+
+    # 6. Total loss: REINFORCE PG loss + beta * KL penalty.
+    pg_loss = -(advantage * logp).mean()
+    kl_loss = beta * kl_k3.mean()
+    loss = pg_loss + kl_loss
 
     opt.zero_grad(set_to_none=True)
     loss.backward()
@@ -733,16 +733,6 @@ def policy_gradient_step(model, ref_model, opt, batch_size=64, beta=0.02):
 
 
 \FloatBarrier
-
-
-
-
-
-
-
-
-
-
 
 
 
