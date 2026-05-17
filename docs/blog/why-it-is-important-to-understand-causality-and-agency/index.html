@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Why it is important to understand causality and agency · ❤️ 4 ∀.ai</title>
+  <meta name="description" content="Large language models are increasingly deployed as agents: They call tools, follow instructions, and act on behalf of users in multiturn loops. Yet selfimprovement and industrial flywheel finetuning recipes still treat…">
+  <meta property="og:title" content="Why it is important to understand causality and agency · ❤️ 4 ∀.ai">
+  <meta property="og:description" content="Large language models are increasingly deployed as agents: They call tools, follow instructions, and act on behalf of users in multiturn loops. Yet selfimprovement and industrial flywheel finetuning recipes still treat…">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://love4all.ai">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="alternate" type="application/rss+xml" title="❤️ 4 ∀.ai" href="/feed.xml">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Home">
+      <span class="brand-mark">♥</span>
+      <span>❤️ 4 ∀.ai</span>
+    </a>
+    <nav aria-label="Main navigation"><a href="/blog/">Entries</a></nav>
+  </header>
+  <main>
+<article class="article">
+  <a class="text-link" href="/blog/">← Back to entries</a>
+  <h1>Why it is important to understand causality and agency</h1>
+  <div class="resource-links"><a class="button" href="/files/why-it-is-important-to-understand-causality-and-agency.pdf">Read PDF</a><a class="button" href="/files/why-it-is-important-to-understand-causality-and-agency.ipynb" download>Download notebook</a><a class="button" href="/files/why-it-is-important-to-understand-causality-and-agency.tex" download>Download TeX source</a></div>
+  <div class="article-body"><p>Large language models are increasingly deployed as agents: They call tools, follow instructions, and act on behalf of users in multi-turn loops. Yet self-improvement and industrial fly-wheel fine-tuning recipes still treat every token of an interaction transcript as evidence about the world, including the model&rsquo;s own past outputs. From a causal perspective this is a category error: An agent&rsquo;s own action is an intervention, not an observation, and conditioning on it as if it were evidence produces self-confirming delusions.</p>
+<p>To address this, we present a tutorial on causality with worked-out pencil-and-paper examples that illustrate why agents must treat their actions as intervention, and not as observations. We then extend the ideas to self-supervised fine-tuning (SFT) of LLMs. An experiment, with an accompanying notebook for easy reproducibility, shows that standard SFT causes delusions, whereas a proposed interventional SFT method avoids such delusions. The experiment also shows that it is possible to learn purposeful behaviour, in this case learning to tell the truth, purely from interaction histories and imitation provided we apply causal learning correctly. </p>
+<p>The implication is practical. The intervention/evidence distinction is no longer a philosophical refinement: It is a one-line code change to standard SFT that removes a measurable failure mode in chat, tool-use, and web-agent training pipelines, at no extra data or compute cost. It is necessary, and together with a well-curated world distribution, it is sufficient to remove the bulk of the self-confirmation and sycophancy effects we observe. This is a sound approach to agency, instead of the alternative to patching pre-training with reinforcement learning via engineered reward selection mechanisms.</p></div>
+</article>
+</main>
+  <footer class="site-footer">
+    <p>© 2026 Love4All.ai.</p>
+  </footer>
+</body>
+</html>
